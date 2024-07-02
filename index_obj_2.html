@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Erlinord Viewer</title>
+</head>
+<link rel="stylesheet" href="style.css">
+
+<body>
+  <!-- <div id="app"></div> -->
+  <div id="title">
+    <div id="progress-bar"></div>
+    <div class="log"></div>
+  </div>
+
+  <div id="container"></div>
+
+  <div id="info">
+  </div>
+
+  <div id="coords"></div>
+
+  <script src="https://unpkg.com/stats.js@0.17.0/build/stats.min.js"></script>
+  
+  <!-- Import maps polyfill -->
+  <!-- Remove this when import maps will be widely supported -->
+  <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.166.0/build/three.module.js",
+        "three": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"
+      }
+    }
+  </script>
+  <!-- <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.138.0/build/three.module.js",
+          "three.interactive": "https://unpkg.com/three@0.138.0/build/three.module.js",
+          "OrbitControls": "https://unpkg.com/three@0.138.0/examples/jsm/controls/OrbitControls.js",
+          "GLTFLoader": "https://unpkg.com/three@0.138.0/examples/jsm/loaders/GLTFLoader.js",
+          "RGBELoader": "https://unpkg.com/three@0.138.0/examples/jsm/loaders/RGBELoader.js",
+          "OBJLoader": "https://unpkg.com/three@0.138.0/examples/jsm/loaders/OBJLoader.js",
+          "MTLLoader": "https://unpkg.com/three@0.138.0/examples/jsm/loaders/MTLLoader.js"
+
+        }
+      }
+    </script> -->
+  <script>
+    const env = {
+      mappe: "models/obj-1/",
+      modeller: [
+        "653569_653563.obj",
+      ],
+      tekster: [{
+        id: "freezer.001",
+        titel: "Fryser",
+        beskrivelse: "Dette er en fryser"
+      }],
+      start: {
+        camera_position: [-13, 10, -15],
+        model_position: [-5, 0, -7.5],
+        model_scale: [1, 1, -1],
+        model_rotation: [3.14/2 /* pi / 2 = 90deg */, 0, 0], // defineres i Euler radians
+        // model_scalar: 0.01
+        click_offset: 2
+      }
+    }
+  </script>
+  <!-- <script type="module" src="/simple.example.js"></script> -->
+  <script type="module" src="main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>THREE.Interactive glTF Example</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <link type="text/css" rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <div id="container"></div>
+
+    <div id="title">
+      <h1>THREE.Interactive glTF Example</h1>
+      <p></p>
+
+      <ul>
+        <li><a href="./index.html">« Index</a></li>
+      </ul>
+
+      <div class="log"></div>
+    </div>
+
+    <div id="info">
+      <a
+        href="https://github.com/markuslerner/THREE.Interactive"
+        target="_blank"
+        rel="noopener"
+        >Source</a
+      >,
+      <a
+        href="https://sketchfab.com/3d-models/microphone-gxl-066-bafhcteks-5172dbe9281a45f48cee8c15bdfa1831"
+        target="_blank"
+        rel="noopener"
+        >Model</a
+      >
+    </div>
+
+    <div id="progress-bar"></div>
+
+    <script src="https://unpkg.com/stats.js@0.17.0/build/stats.min.js"></script>
+
+    <!-- Import maps polyfill -->
+    <!-- Remove this when import maps will be widely supported -->
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"
+    ></script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.138.0/build/three.module.js",
+          "OrbitControls": "https://unpkg.com/three@0.138.0/examples/jsm/controls/OrbitControls.js",
+          "GLTFLoader": "https://unpkg.com/three@0.138.0/examples/jsm/loaders/GLTFLoader.js",
+          "RGBELoader": "https://unpkg.com/three@0.138.0/examples/jsm/loaders/RGBELoader.js"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'OrbitControls';
+      import { GLTFLoader } from 'GLTFLoader';
+      import { RGBELoader } from 'RGBELoader';
+
+      import { InteractionManager } from './node_modules/three.interactive/build/three.interactive.js';
+    //   import { InteractionManager } from 'three.interactive';
+
+      const stats = new Stats();
+      stats.dom.style.left = 'auto';
+      stats.dom.style.right = '0';
+      stats.dom.style.top = 'auto';
+      stats.dom.style.bottom = '0';
+      document.body.appendChild(stats.dom);
+
+      const renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      document.getElementById('container').appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(0.0, 0.0, 4.0);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.12;
+      controls.minDistance = 0.1;
+      controls.maxDistance = 10000;
+      controls.target.set(0, 0, 0);
+      controls.update();
+
+      const loadingManager = new THREE.LoadingManager();
+      const progressBar = document.getElementById('progress-bar');
+      if (progressBar) {
+        loadingManager.onProgress = function (item, loaded, total) {
+          progressBar.style.width = (loaded / total) * 100 + '%';
+        };
+
+        loadingManager.onLoad = function () {
+          progressBar.style.width = '100%';
+          setTimeout(() => {
+            progressBar.style.display = 'none';
+          }, 500);
+        };
+      }
+
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      const rgbeLoader = new RGBELoader();
+      rgbeLoader.load('textures/skybox_512px.hdr', (texture) => {
+        let envMap = pmremGenerator.fromEquirectangular(texture).texture;
+        scene.environment = envMap;
+        texture.dispose();
+      });
+
+      rgbeLoader.manager = loadingManager;
+
+      const interactionManager = new InteractionManager(
+        renderer,
+        camera,
+        renderer.domElement
+      );
+
+      const logDiv = document.querySelector('#title .log');
+
+      const loader = new GLTFLoader();
+      loader.manager = loadingManager;
+      loader.load(
+        'node_modules/three.interactive/models/scene.gltf',
+        // 'models/microphone_gxl_066_bafhcteks/scene.gltf',
+        function (gltf) {
+          const model = gltf.scene;
+
+          scene.add(model);
+
+          let objectsHover = [];
+
+          model.traverse((child) => {
+            if (child.children.length === 0) {
+              // Add only objects widthout children
+              if (child.material) {
+                child.material = child.material.clone();
+                child.userData.initialEmissive =
+                  child.material.emissive.clone();
+                child.material.emissiveIntensity = 0.5;
+              }
+
+              interactionManager.add(child);
+
+              child.addEventListener('mouseover', (event) => {
+                console.log(event);
+                // event.stopPropagation();
+                if (!objectsHover.includes(event.target))
+                  objectsHover.push(event.target);
+
+                document.body.style.cursor = 'pointer';
+
+                const path = getPath(event.target);
+                logDiv.innerHTML =
+                  '<span style="color: #ff0000">' +
+                  path +
+                  ' – mouseover</span>';
+
+                if (child.material) {
+                  child.userData.materialEmissiveHex =
+                    child.material.emissive.getHex();
+                  child.material.emissive.setHex(0xff0000);
+                  child.material.emissiveIntensity = 0.5;
+                }
+              });
+
+              child.addEventListener('mouseout', (event) => {
+                console.log(event);
+                // event.stopPropagation();
+
+                objectsHover = objectsHover.filter((n) => n !== event.target);
+                if (objectsHover.length > 0) {
+                  const o = objectsHover[objectsHover.length - 1];
+                  o.material.emissive.setHex(0xff0000);
+                  logDiv.innerHTML = getPath(o);
+                } else {
+                  logDiv.innerHTML = '';
+                }
+
+                document.body.style.cursor = 'default';
+
+                if (child.material) {
+                  child.material.emissive.setHex(
+                    child.userData.materialEmissiveHex
+                  );
+                }
+              });
+
+              child.addEventListener('mousedown', (event) => {
+                console.log(event);
+                console.log(event.target.name);
+                event.stopPropagation();
+
+                if (child.material) {
+                  child.material.emissive.setHex(0x0000ff);
+                }
+
+                const path = getPath(event.target);
+                logDiv.innerHTML =
+                  '<span style="color: #0000ff">' +
+                  path +
+                  ' – mousedown</span>';
+              });
+            }
+          });
+        }
+      );
+
+      const animate = (time) => {
+        requestAnimationFrame(animate);
+
+        controls.update();
+
+        interactionManager.update();
+
+        renderer.render(scene, camera);
+
+        stats.update();
+      };
+
+      animate();
+
+      window.addEventListener('resize', handleWindowResize, false);
+
+      function handleWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function getPath(object) {
+        const string = object.name + ' [' + object.type + ']';
+
+        if (object.parent) {
+          return getPath(object.parent) + ' > ' + string;
+        } else {
+          return string;
+        }
+      }
+    </script>
+  </body>
+</html>
