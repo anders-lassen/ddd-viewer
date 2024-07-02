@@ -14,111 +14,150 @@ var global_object;
 var global_child;
 var MODEL_TYPE;
 let selected_elements = {}
+var x2js = new X2JS();
 
-const mesh = new THREE.Mesh(
-  new THREE.SphereGeometry(),
-  new THREE.MeshBasicMaterial()
-);
-mesh.geometry.computeBoundingBox();
+// ENV --------------------
 
-const stats = new Stats();
-stats.dom.style.left = 'auto';
-stats.dom.style.right = '0';
-stats.dom.style.top = 'auto';
-stats.dom.style.bottom = '0';
-document.body.appendChild(stats.dom);
+if (typeof window.env == "undefined" && !!location.hash) {
+  var env;
 
-const renderer = new THREE.WebGLRenderer({
-  alpha: true,
-  antialias: true,
-});
+  // get xml env from hash folder
+  let xml_url = "https:" + location.hash.substring(1, location.hash.length) + "env.json"
+  console.log(xml_url);
 
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1; // changed from 1.2
-document.getElementById('container').appendChild(renderer.domElement);
+  fetch(xml_url).then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.text();
+  })
+    .then(text => {
+      try {
+        env = JSON.parse(text);
+      } catch (x) {
+        console.error(x.message)
+      }
 
-// LABEL
-const labelRenderer = new CSS2DRenderer();
-labelRenderer.setSize(window.innerWidth, window.innerHeight);
-labelRenderer.domElement.style.position = 'absolute';
-labelRenderer.domElement.style.top = '0px';
-labelRenderer.domElement.id = 'labelRenderer'
-document.getElementById('container').appendChild(labelRenderer.domElement);
-// document.body.appendChild( labelRenderer.domElement );
+      ready()
+    })
+    .catch(error => {
+      console.error(`There was a problem with
+                   the fetch operation:`, error);
+    });
+} else ready()
 
-const scene = new THREE.Scene();
+// -------------------- ENV
 
-const camera = new THREE.PerspectiveCamera(
-  25,
-  window.innerWidth / window.innerHeight,
-  0.01,
-  10000
-);
+var mesh,
+ stats,
+ renderer,
+ labelRenderer,
+ scene,
+ camera,
+ controls,
+ loadingManager,
+ progressBar,
+ itemProgressBar,
+ axesHelper,
+ interactionManager,
+ logDiv;
+function ready() {
+  mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(),
+    new THREE.MeshBasicMaterial()
+  );
+  mesh.geometry.computeBoundingBox();
 
-if (env.start.hasOwnProperty("camera_position"))
-  camera.position.set(...env.start.camera_position);
-// camera.position.set(11.011675925552135, 12.01484409108719, -16.173583451058594);
+  stats = new Stats();
+  stats.dom.style.left = 'auto';
+  stats.dom.style.right = '0';
+  stats.dom.style.top = 'auto';
+  stats.dom.style.bottom = '0';
+  document.body.appendChild(stats.dom);
 
-// {x: 11.011675925552135, y: 12.01484409108719, z: -16.173583451058594}
-// _Vector3 {x: -17.875158077919778, y: 42.66562854748416, z: 45.09580434623089}
+  renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true,
+  });
 
-// const _camera = new THREE.PerspectiveCamera(
-//   25,
-//   window.innerWidth / window.innerHeight,
-//   0.1,
-//   1000
-// );
-// // _camera.position.set(11.011675925552135, 12.01484409108719, -16.173583451058594);
-// let cameraPerspectiveHelper = new THREE.CameraHelper(_camera);
-// scene.add(cameraPerspectiveHelper);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1; // changed from 1.2
+  document.getElementById('container').appendChild(renderer.domElement);
 
-const controls = new OrbitControls(camera, labelRenderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.12;
-controls.minDistance = 0.01; // 0.1;
-controls.maxDistance = 100000; // 10000;
-// controls.target.set(0, 0, 0);
-// controls.target.set(1.6026395000762448, -2.428353519051226, -0.35886733140890414);
-// _Vector3 {x: 1.6026395000762448, y: -2.428353519051226, z: -0.35886733140890414}
-// _Vector3 {x: -6.169298198569686, y: -2.6444192575129084, z: -5.118301815393441}
-controls.update();
+  // LABEL
+  labelRenderer = new CSS2DRenderer();
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.domElement.style.position = 'absolute';
+  labelRenderer.domElement.style.top = '0px';
+  labelRenderer.domElement.id = 'labelRenderer'
+  document.getElementById('container').appendChild(labelRenderer.domElement);
+  // document.body.appendChild( labelRenderer.domElement );
 
-const loadingManager = new THREE.LoadingManager();
-const progressBar = document.getElementById('progress-bar');
-if (progressBar) {
-  loadingManager.onProgress = function (item, loaded, total) {
-    progressBar.style.width = (loaded / total) * 100 + '%';
-    progressBar.textContent = (loaded / total) * 100 + '%'
-  };
+  scene = new THREE.Scene();
 
-  loadingManager.onLoad = function () {
-    progressBar.style.width = '100%';
-    setTimeout(() => {
-      progressBar.style.display = 'none';
-    }, 500);
-  };
-}
+  camera = new THREE.PerspectiveCamera(
+    25,
+    window.innerWidth / window.innerHeight,
+    0.01,
+    10000
+  );
 
-const axesHelper = new THREE.AxesHelper(2)
-scene.add(axesHelper)
+  if (env.start.hasOwnProperty("camera_position"))
+    camera.position.set(...env.start.camera_position);
 
-const interactionManager = new InteractionManager(
-  renderer,
-  camera,
-  renderer.domElement
-);
+  controls = new OrbitControls(camera, labelRenderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.12;
+  controls.minDistance = 0.01; // 0.1;
+  controls.maxDistance = 100000; // 10000;
 
-const logDiv = document.querySelector('#title .log');
-// const coordsDiv = document.querySelector('#coords');
+  controls.update();
 
-if (env.modeller && env.modeller.length) {
-  for (const model of env.modeller) {
-    preloadModel(model)
+  loadingManager = new THREE.LoadingManager();
+  progressBar = document.getElementById('progress-bar');
+  itemProgressBar = document.getElementById('item-progress-bar');
+
+  if (progressBar) {
+    loadingManager.onProgress = function (item, loaded, total) {
+      progressBar.style.width = (loaded / total) * 100 + '%';
+      progressBar.textContent = (loaded / total) * 100 + '%'
+    };
+
+    loadingManager.onLoad = function () {
+      progressBar.style.width = '100%';
+      setTimeout(() => {
+        progressBar.style.display = 'none';
+      }, 500);
+    };
   }
-} else if (env.model && env.model.length) {
-  preloadModel(env.model)
+
+  axesHelper = new THREE.AxesHelper(2)
+  scene.add(axesHelper)
+
+  interactionManager = new InteractionManager(
+    renderer,
+    camera,
+    renderer.domElement
+  );
+
+  logDiv = document.querySelector('#title .log');
+
+  if (env.modeller && env.modeller.length) {
+    if (Array.isArray(env.modeller))
+      for (const model of env.modeller) {
+        preloadModel(model)
+      }
+    else
+    preloadModel(env.modeller)
+  } else if (env.model && env.model.length) {
+    preloadModel(env.model)
+  }
+
+  animate();
+
+  window.addEventListener('resize', handleWindowResize, false);
 }
 
 function preloadModel(model) {
@@ -134,7 +173,7 @@ function preloadModel(model) {
 
 
     default:
-      alert("Fandt ikke model typen")
+      console.log("Fandt ikke model typen")
       break;
   }
 }
@@ -169,18 +208,18 @@ function doLoadOBJ(model) {
       .setMaterials(materials)
       .setPath(env.mappe)
     obj_loader.manager = loadingManager
+    let ts = Date.now();
 
     obj_loader.load(obj_path, async function (object) {
+      // hide progress bar
+      var el = document.getElementById('item-progress-bar-' + ts)
+
+      el.style.width = '100%';
+      setTimeout(() => {
+        el.style.display = 'none';
+      }, 500);
+
       const emissiveIntensity = 0.5;
-
-      // console.log("getWorldPosition", object.getWorldPosition(new THREE.Vector3()))
-      // console.log("getWorldQuaternion", object.getWorldQuaternion(new THREE.Quaternion()))
-      // console.log("getWorldScale", object.getWorldScale(new THREE.Vector3()))
-      // console.log("getWorldDirection", object.getWorldDirection(new THREE.Vector3()))
-      // console.log("localToWorld", object.localToWorld(new THREE.Vector3()))
-      // debugger
-
-      // object.position.y = - 0.95;
 
       if (env.start.hasOwnProperty("model_position"))
         object.position.set(...env.start.model_position);
@@ -256,10 +295,28 @@ function doLoadOBJ(model) {
           addMouseout(child, objectsHover)
 
           addMousedown(child, objectsHover)
-        } // else debugger
+        }
       });
-    }, function (x) {
-      // console.log("progress", x)
+    }, function (xhr) {
+      console.log("progress", xhr)
+      let model_name = model.replace(/\.obj$/g, "")
+
+      var el = document.getElementById('item-progress-bar-' + ts)
+
+      if (!!el) {
+        el.style.width = (xhr.loaded / xhr.total) * 100 + '%';
+        el.textContent = model_name + ": " + Math.round((xhr.loaded / xhr.total) * 100) + '%'
+      } else {
+        el = document.createElement("div")
+        el.id = 'item-progress-bar-' + ts
+        
+        el.style.width = (xhr.loaded / xhr.total) * 100 + '%';
+        el.textContent = model_name + ": " + Math.round((xhr.loaded / xhr.total) * 100) + '%'
+
+        itemProgressBar.append(el)
+      }
+
+
     }, function (x) {
       console.error("error", x)
     });
@@ -311,7 +368,7 @@ function doLoadGLTF(model) {
           addMouseout(child, objectsHover)
 
           addMousedown(child, objectsHover)
-        } // else debugger
+        }
       });
     }
   );
@@ -458,9 +515,6 @@ const animate = (time) => {
   // updateCoords();
 };
 
-animate();
-
-window.addEventListener('resize', handleWindowResize, false);
 
 function handleWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;

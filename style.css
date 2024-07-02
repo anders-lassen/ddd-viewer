@@ -36,13 +36,22 @@ body {
 #progress-bar {
   padding: 7px;
   background-color: lightskyblue;
+  overflow-x: visible;
+  white-space: nowrap;
+}
+
+#item-progress-bar {
+  padding-left: 7px;
+  background-color: lightgreen;
+  overflow-x: visible;
+  white-space: nowrap;
 }
 
 .label {
   color: #FFF;
   font-family: sans-serif;
   padding: 2px;
-  background: rgba( 0, 0, 0, .6 );
+  background: rgba(0, 0, 0, .6);
 }
 
 
