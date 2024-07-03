@@ -30,11 +30,11 @@ if (!location.hash) {
 if (typeof window.env == "undefined" && !!location.hash) {
   var env;
 
-  // get xml env from hash folder
-  let xml_url = folder + "env.json"
-  console.log(xml_url);
+  // get env from hash folder
+  let env_url = folder + "env.json"
+  console.log(env_url);
 
-  fetch(xml_url).then(response => {
+  fetch(env_url).then(response => {
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -70,6 +70,7 @@ var mesh,
   axesHelper,
   interactionManager,
   logDiv,
+  coordsDiv,
   infoDiv;
 function ready() {
   mesh = new THREE.Mesh(
@@ -77,13 +78,15 @@ function ready() {
     new THREE.MeshBasicMaterial()
   );
   mesh.geometry.computeBoundingBox();
-
-  stats = new Stats();
-  stats.dom.style.left = 'auto';
-  stats.dom.style.right = '0';
-  stats.dom.style.top = 'auto';
-  stats.dom.style.bottom = '0';
-  document.body.appendChild(stats.dom);
+  
+  if (admin) {
+    stats = new Stats();
+    stats.dom.style.left = 'auto';
+    stats.dom.style.right = '0';
+    stats.dom.style.top = 'auto';
+    stats.dom.style.bottom = '0';
+    document.body.appendChild(stats.dom);
+  }
 
   renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -143,8 +146,10 @@ function ready() {
     };
   }
 
-  axesHelper = new THREE.AxesHelper(2)
-  scene.add(axesHelper)
+  if (admin) {
+    axesHelper = new THREE.AxesHelper(2)
+    scene.add(axesHelper)
+  }
 
   interactionManager = new InteractionManager(
     renderer,
@@ -154,6 +159,8 @@ function ready() {
   );
 
   logDiv = document.querySelector('#title .log');
+  coordsDiv = document.querySelector('#coords');
+  coordsDiv.style.display = "none"
 
   if (admin)
     logDiv.style.display = 'block';
@@ -275,12 +282,12 @@ function doLoadOBJ(model) {
             objectDiv.className = 'label';
             objectDiv.textContent = model.label_titel_kort || model.label_titel || model.navn || 'Label';
 
-            
+
             const objectLabel = new CSS2DObject(objectDiv);
-            
+
             objectLabel.position.copy(center);
             objectLabel.center.set(0, 2);
-            
+
             if (model.hasOwnProperty("label_offset") && model.label_offset)
               objectLabel.center.set(...model.label_offset)
 
@@ -403,8 +410,10 @@ function addMouseover(child, objectsHover, emissiveIntensity) {
     const boundingBox = new THREE.Box3().setFromObject(event.target);
     const center = boundingBox.getCenter(new THREE.Vector3());
 
-    child.box = new THREE.BoxHelper(event.target.parent, 0xffff00);
-    scene.add(child.box);
+    if (admin) {
+      child.box = new THREE.BoxHelper(event.target.parent, 0xffff00);
+      scene.add(child.box);
+    }
 
     // show center coords
     const path = getPath(event.target);
@@ -421,7 +430,7 @@ function addMouseover(child, objectsHover, emissiveIntensity) {
       for (let cm of child.material) {
         child.userData.materialEmissiveHex =
           cm.emissive.getHex();
-        cm.emissive.setHex(0xff0000);
+        cm.emissive.setHex(0x0000ff);
         cm.emissiveIntensity = emissiveIntensity;
       }
     }
@@ -521,8 +530,20 @@ const animate = (time) => {
   labelRenderer.render(scene, camera);
 
   stats.update();
+
+  if (admin)
+    updateCoords();
+
 };
 
+const updateCoords = () => {
+  coordsDiv.style.display = "block"
+  coordsDiv.innerHTML =
+    '<span style="color: white;">'
+    + `"camera_position": [${camera.position.x},${camera.position.y},${camera.position.z}]`
+    // + "<br>"
+    // + `{${controls.target.x},${controls.target.y},${controls.target.z}}`
+}
 
 function handleWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;

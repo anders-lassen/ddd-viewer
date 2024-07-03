@@ -27,10 +27,12 @@ body {
 }
 
 #coords {
-  width: 100%;
+  width: 50%;
   position: fixed;
   bottom: 0;
-  left: 0;
+  right: 100px;
+  background-color: gray;
+  padding: 7px;
 }
 
 #progress-bar {
