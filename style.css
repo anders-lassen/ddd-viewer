@@ -26,6 +26,10 @@ body {
   left: 0;
 }
 
+#title .log {
+  padding-left: 7px
+}
+
 #coords {
   width: 50%;
   position: fixed;
@@ -66,6 +70,18 @@ body {
   margin: 7px;
   padding: 7px 24px;
 }
+
+div#info:empty {
+  display: none;
+  /* min-width: 75px;
+  min-height: 30px;
+  background-image: url('https://interactdesign.dk/wp-content/uploads/2024/06/ErlinordLogo2024.png');
+  background-size: contain;
+  background-repeat:no-repeat;
+  background-position: center center; */
+}
+
+
 /* 
 a {
   font-weight: 500;

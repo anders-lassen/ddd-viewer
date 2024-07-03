@@ -106,7 +106,6 @@ function ready() {
   labelRenderer.domElement.style.top = '0px';
   labelRenderer.domElement.id = 'labelRenderer'
   document.getElementById('container').appendChild(labelRenderer.domElement);
-  // document.body.appendChild( labelRenderer.domElement );
 
   scene = new THREE.Scene();
 
@@ -123,8 +122,8 @@ function ready() {
   controls = new OrbitControls(camera, labelRenderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.12;
-  controls.minDistance = 0.01; // 0.1;
-  controls.maxDistance = 100000; // 10000;
+  controls.minDistance = 0.01;
+  controls.maxDistance = 100000;
 
   controls.update();
 
@@ -155,7 +154,6 @@ function ready() {
     renderer,
     camera,
     labelRenderer.domElement
-    // renderer.domElement
   );
 
   logDiv = document.querySelector('#title .log');
@@ -399,7 +397,6 @@ function doLoadGLTF(model) {
 
 function addMouseover(child, objectsHover, emissiveIntensity) {
   child.addEventListener('mouseover', (event) => {
-    // console.log(event);
     // event.stopPropagation();
     if (!objectsHover.includes(event.target))
       objectsHover.push(event.target);
@@ -418,7 +415,8 @@ function addMouseover(child, objectsHover, emissiveIntensity) {
     // show center coords
     const path = getPath(event.target);
     logDiv.innerHTML =
-      '<span style="color: #ff0000">' +
+      '<span>Model navn: ' + child.userData.model.navn + '</span> > ' +
+      '<span style="color: #fff">' +
       path +
       ' – mouseover</span>'
       + '<br>Center: ' + JSON.stringify(center);
@@ -438,7 +436,6 @@ function addMouseover(child, objectsHover, emissiveIntensity) {
 }
 function addMouseout(child, objectsHover) {
   child.addEventListener('mouseout', (event) => {
-    // console.log(event);
     // event.stopPropagation();
     scene.remove(child.box);
 
@@ -484,6 +481,11 @@ function addMouseout(child, objectsHover) {
   });
 }
 function addMousedown(child, objectsHover) {
+  // if (!addMousedown.off_click_listner)
+  //   addMousedown.off_click_listner = document.addEventListener('mousedown', (event) => {
+  //     infoDiv.innerHTML = ""
+  //   })
+
   child.addEventListener('mousedown', (event) => {
     // only left click
     if (event.originalEvent.which && event.originalEvent.which != 1) return
@@ -499,11 +501,14 @@ function addMousedown(child, objectsHover) {
       }
     }
 
-    fitCameraToObject(event.target /* .parent */, env.start.click_offset)
+    fitCameraToObject(event.target, env.start.click_offset)
 
-    infoDiv.innerHTML = `
-    <h3>${child.userData.model.label_titel_lang || child.userData.model.label_titel}</h3>
-    <p>${child.userData.model.label_beskrivelse}</p>`
+    if (child.userData.model.label_aktiv) {
+      infoDiv.innerHTML = `
+      <h3>${child.userData.model.label_titel_lang || child.userData.model.label_titel}</h3>
+      <p>${child.userData.model.label_beskrivelse}</p>`
+    } else 
+      infoDiv.innerHTML = ""
 
     const path = getPath(event.target);
     logDiv.innerHTML =
@@ -569,31 +574,13 @@ function getPath(object) {
 
 function fitCameraToObject(object, offset) {
   const __camera = camera
+
   // For testing start with the current controlCamera's position
   // __camera.position.set(camera.position.x, camera.position.y, camera.position.z)
 
   const boundingBox = new THREE.Box3().setFromObject(object);
   const center = boundingBox.getCenter(new THREE.Vector3());
   const size = boundingBox.getSize(new THREE.Vector3());
-
-  const canvas = document.querySelector("#container canvas")
-
-  const canvasWidth = canvas.getBoundingClientRect().width
-  const canvasHeight = canvas.getBoundingClientRect().height
-  const minSize = Math.min(...[boundingBox.min.x, boundingBox.min.y, boundingBox.min.z])
-  const maxSize = Math.max(...[boundingBox.max.x, boundingBox.max.y, boundingBox.max.z])
-
-  const aspect = canvasWidth / canvasHeight
-  const fov = 75
-  const near = 0.1
-  const far = 1000
-
-  let cameraZoom = 1
-  // console.log("init camera.position", __camera.position)
-  // console.log("init camera.zoom", __camera.zoom);
-  // console.log("init controls", controls.target)
-  // console.log("center", center);
-  // console.log("size", size);
 
   gsap.to(__camera.position, {
     duration: 1, // seconds
@@ -602,18 +589,17 @@ function fitCameraToObject(object, offset) {
     // y is up
     z: center.z < 0 ? center.z - (size.z * offset) : (center.z + (size.z * offset)),
     onUpdate: function () {
-      // __camera.lookAt(center);
       controls.target.set(center.x, center.y, center.z);
 
     },
     onComplete: function () {
-      // cameraZoom = 45 / maxSize;
-      // __camera.zoom = cameraZoom;
+      // ...
     }
   });
 
-  console.log("camera", __camera.position)
-  console.log("camera.zoom", __camera.zoom);
-  console.log("controls", controls.target)
-
+  if (admin) {
+    console.log("camera", __camera.position)
+    console.log("camera.zoom", __camera.zoom);
+    console.log("controls", controls.target)
+  }
 }
