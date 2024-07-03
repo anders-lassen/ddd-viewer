@@ -78,7 +78,7 @@ function ready() {
     new THREE.MeshBasicMaterial()
   );
   mesh.geometry.computeBoundingBox();
-  
+
   if (admin) {
     stats = new Stats();
     stats.dom.style.left = 'auto';
@@ -529,11 +529,11 @@ const animate = (time) => {
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
 
-  stats.update();
 
-  if (admin)
+  if (admin) {
+    stats.update();
     updateCoords();
-
+  }
 };
 
 const updateCoords = () => {
@@ -541,8 +541,8 @@ const updateCoords = () => {
   coordsDiv.innerHTML =
     '<span style="color: white;">'
     + `"camera_position": [${camera.position.x},${camera.position.y},${camera.position.z}]`
-    // + "<br>"
-    // + `{${controls.target.x},${controls.target.y},${controls.target.z}}`
+  // + "<br>"
+  // + `{${controls.target.x},${controls.target.y},${controls.target.z}}`
 }
 
 function handleWindowResize() {
