@@ -40,7 +40,7 @@ body {
   white-space: nowrap;
 }
 
-#item-progress-bar {
+#item-progress-bar > div {
   padding-left: 7px;
   background-color: lightgreen;
   overflow-x: visible;
@@ -50,11 +50,20 @@ body {
 .label {
   color: #FFF;
   font-family: sans-serif;
-  padding: 2px;
-  background: rgba(0, 0, 0, .6);
+  font-weight: bolder;
+  padding: 7px;
+  background: #6EC1E4; /* rgba(0, 0, 0, .6); */
 }
 
-
+#info {
+  background-color: gray;
+  width: fit-content;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  margin: 7px;
+  padding: 7px 24px;
+}
 /* 
 a {
   font-weight: 500;

@@ -14,7 +14,16 @@ var global_object;
 var global_child;
 var MODEL_TYPE;
 let selected_elements = {}
-var x2js = new X2JS();
+
+var folder = "https:" + location.hash.substring(1, location.hash.length)
+var admin;
+
+if (!location.hash) {
+  alert(".env fil er ikke indstillet.")
+} else if (location.hash.endsWith("&ADMIN")) {
+  admin = true
+  folder = folder.replace("&ADMIN", "")
+}
 
 // ENV --------------------
 
@@ -22,7 +31,7 @@ if (typeof window.env == "undefined" && !!location.hash) {
   var env;
 
   // get xml env from hash folder
-  let xml_url = "https:" + location.hash.substring(1, location.hash.length) + "env.json"
+  let xml_url = folder + "env.json"
   console.log(xml_url);
 
   fetch(xml_url).then(response => {
@@ -49,18 +58,19 @@ if (typeof window.env == "undefined" && !!location.hash) {
 // -------------------- ENV
 
 var mesh,
- stats,
- renderer,
- labelRenderer,
- scene,
- camera,
- controls,
- loadingManager,
- progressBar,
- itemProgressBar,
- axesHelper,
- interactionManager,
- logDiv;
+  stats,
+  renderer,
+  labelRenderer,
+  scene,
+  camera,
+  controls,
+  loadingManager,
+  progressBar,
+  itemProgressBar,
+  axesHelper,
+  interactionManager,
+  logDiv,
+  infoDiv;
 function ready() {
   mesh = new THREE.Mesh(
     new THREE.SphereGeometry(),
@@ -139,10 +149,18 @@ function ready() {
   interactionManager = new InteractionManager(
     renderer,
     camera,
-    renderer.domElement
+    labelRenderer.domElement
+    // renderer.domElement
   );
 
   logDiv = document.querySelector('#title .log');
+
+  if (admin)
+    logDiv.style.display = 'block';
+  else
+    logDiv.style.display = 'none';
+
+  infoDiv = document.querySelector('#info');
 
   if (env.modeller && env.modeller.length) {
     if (Array.isArray(env.modeller))
@@ -150,7 +168,7 @@ function ready() {
         preloadModel(model)
       }
     else
-    preloadModel(env.modeller)
+      preloadModel(env.modeller)
   } else if (env.model && env.model.length) {
     preloadModel(env.model)
   }
@@ -162,11 +180,11 @@ function ready() {
 
 function preloadModel(model) {
   switch (true) {
-    case /\.gltf/g.test(model):
+    case /\.gltf/g.test(model.navn):
       MODEL_TYPE = "GLTF"
       doLoadGLTF(model)
       break;
-    case /\.obj/g.test(model):
+    case /\.obj/g.test(model.navn):
       MODEL_TYPE = "OBJ"
       doLoadOBJ(model)
       break;
@@ -192,11 +210,11 @@ function doLoadOBJ(model) {
 
   renderer.outputEncoding = THREE.sRGBEncoding;
 
-  const loader = new MTLLoader().setPath(env.mappe)
+  const loader = new MTLLoader().setPath(folder)
   loader.manager = loadingManager
 
-  let mtl_path = model.replace(/\.obj$/g, "") + '.mtl'
-  let obj_path = model
+  let mtl_path = model.navn.replace(/\.obj$/g, "") + '.mtl'
+  let obj_path = model.navn
 
   console.log(mtl_path, obj_path)
 
@@ -206,9 +224,9 @@ function doLoadOBJ(model) {
 
     const obj_loader = new OBJLoader()
       .setMaterials(materials)
-      .setPath(env.mappe)
+      .setPath(folder)
     obj_loader.manager = loadingManager
-    let ts = Date.now();
+    let ts = Date.now() + btoa(model.navn);
 
     obj_loader.load(obj_path, async function (object) {
       // hide progress bar
@@ -245,30 +263,30 @@ function doLoadOBJ(model) {
       let i = 0;
 
       object.traverse((child) => {
+        child.userData.model = model
         // Add only objects widthout children
         if (child.children.length === 0) {
-          if (i == 0) {
+          if (i == 0 && model.label_aktiv) {
             // Labels
             const center = child.getVertexPosition(0, new THREE.Vector3()); // boundingBox.getCenter(new THREE.Vector3());
             console.log("center", center)
 
             const objectDiv = document.createElement('div');
             objectDiv.className = 'label';
-            objectDiv.textContent = /* getLabel() || */ child.name || 'Object';
+            objectDiv.textContent = model.label_titel_kort || model.label_titel || model.navn || 'Label';
 
+            
             const objectLabel = new CSS2DObject(objectDiv);
-
+            
             objectLabel.position.copy(center);
             objectLabel.center.set(0, 2);
-
+            
+            if (model.hasOwnProperty("label_offset") && model.label_offset)
+              objectLabel.center.set(...model.label_offset)
 
             child.add(objectLabel);
 
             objectLabel.layers.set(0);
-
-
-            global_child = child
-            global_label = objectLabel
           }
           i++
 
@@ -299,7 +317,7 @@ function doLoadOBJ(model) {
       });
     }, function (xhr) {
       console.log("progress", xhr)
-      let model_name = model.replace(/\.obj$/g, "")
+      let model_name = model.navn.replace(/\.obj$/g, "")
 
       var el = document.getElementById('item-progress-bar-' + ts)
 
@@ -309,14 +327,12 @@ function doLoadOBJ(model) {
       } else {
         el = document.createElement("div")
         el.id = 'item-progress-bar-' + ts
-        
+
         el.style.width = (xhr.loaded / xhr.total) * 100 + '%';
         el.textContent = model_name + ": " + Math.round((xhr.loaded / xhr.total) * 100) + '%'
 
         itemProgressBar.append(el)
       }
-
-
     }, function (x) {
       console.error("error", x)
     });
@@ -337,7 +353,7 @@ function doLoadGLTF(model) {
 
   rgbeLoader.manager = loadingManager;
 
-  const loader = new GLTFLoader().setPath(env.mappe);
+  const loader = new GLTFLoader().setPath(folder);
   loader.manager = loadingManager;
 
   loader.load(model,
@@ -476,6 +492,10 @@ function addMousedown(child, objectsHover) {
 
     fitCameraToObject(event.target /* .parent */, env.start.click_offset)
 
+    infoDiv.innerHTML = `
+    <h3>${child.userData.model.label_titel_lang || child.userData.model.label_titel}</h3>
+    <p>${child.userData.model.label_beskrivelse}</p>`
+
     const path = getPath(event.target);
     logDiv.innerHTML =
       '<span style="color: #0000ff">' +
@@ -490,15 +510,6 @@ function addMousedown(child, objectsHover) {
   });
 }
 
-
-// const updateCoords = () => {
-//   coordsDiv.innerHTML =
-//     '<span style="color: white;">'
-//     + `{${camera.position.x},${camera.position.y},${camera.position.z}}`
-//     + "<br>"
-//     + `{${controls.target.x},${controls.target.y},${controls.target.z}}`
-// }
-
 const animate = (time) => {
   requestAnimationFrame(animate);
 
@@ -510,9 +521,6 @@ const animate = (time) => {
   labelRenderer.render(scene, camera);
 
   stats.update();
-
-  // update coords
-  // updateCoords();
 };
 
 
