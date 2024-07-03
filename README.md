@@ -8,7 +8,7 @@ Udviklet til Erlinord.
 Tilføj koden nedenfor til websiden. Opdaterer med links til obj-filerne.
 
 ```html
-<iframe src="https://ddd-viewer-erlinord.vercel.app/[#STI TIL .OBJ filer]" height="500"></iframe>
+<iframe src="https://ddd-viewer-erlinord.vercel.app/#[STI TIL .OBJ filer]" height="500"></iframe>
 ```
 
 Eksempel:
@@ -22,7 +22,7 @@ Her defineres hvor filerne skal hentes fra, i dette eksempel er dette værten '/
 For at slå administrator funktioner til, indsættes ```&ADMIN``` til sidst i linket.
 
 ```html
-<iframe src="https://ddd-viewer-erlinord.vercel.app/[#STI TIL .OBJ filer][&ADMIN]" height="500"></iframe>
+<iframe src="https://ddd-viewer-erlinord.vercel.app/#[STI TIL .OBJ filer][&ADMIN]" height="500"></iframe>
 ```
 
 
