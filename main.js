@@ -322,7 +322,11 @@ function doLoadOBJ(model) {
       });
     }, function (xhr) {
       console.log("progress", xhr)
-      let model_name = model.navn.replace(/\.obj$/g, "")
+      let model_name
+      if (model.hasOwnProperty("label_aktiv") && model.label_aktiv && model.label_titel)
+        model_name = model.label_titel.replace(/\.obj$/g, "")
+      else
+        model_name = model.navn.replace(/\.obj$/g, "")
 
       var el = document.getElementById('item-progress-bar-' + ts)
 
@@ -507,7 +511,7 @@ function addMousedown(child, objectsHover) {
       infoDiv.innerHTML = `
       <h3>${child.userData.model.label_titel_lang || child.userData.model.label_titel}</h3>
       <p>${child.userData.model.label_beskrivelse}</p>`
-    } else 
+    } else
       infoDiv.innerHTML = ""
 
     const path = getPath(event.target);
